@@ -19,6 +19,12 @@ For the list of commands that are available, refer to the source and the above t
 
 ### Select Commands
 
+#### Get Peers
+
+    > link.netInfo().then(log)
+    or
+    > var peers = await link.peers(); peers
+
 #### Get Block
 
 A block by height
@@ -29,10 +35,14 @@ The latest block
 
     > link.block().then(log)
 
-#### Get Peers
+#### Get Transaction
 
-    > link.netInfo().then(log)
-    or
-    > var peers = await link.peers(); peers
+By hex or base64 transaction hash
+
+    > await link.getTx(hash)
+
+By base64 transaction hash
+
+    > await link.tx({hash: hash, prove: true})
 
 #### More To Be Added
