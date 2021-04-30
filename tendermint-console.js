@@ -34,7 +34,7 @@ function connect(url) {
         try { global.log = console.log } catch {}
     }
 
-    var cli = require('Tendermint').RpcClient(url)
+    var cli = require('tendermint').RpcClient(url)
 
     // HACK: removing 'uncaughtException' handler,
     //   set during require('Tendermint')
@@ -72,6 +72,11 @@ function connect(url) {
     //   : TODO: missing
     // cli.tx({hash: 'hash', prove: true|false}) => /tx
 
+    // lastest block number
+    cli.blockNumber = async function() {
+        return parseInt((await this.status()).sync_info.latest_block_height)
+    }
+
     cli.peers = cli.netInfo
 
     // same as .tx(), but with hex hash converted to base64
@@ -85,6 +90,80 @@ function connect(url) {
 
     // need to add account access
 
+    //
+    cli.viewTxs = async function(ix, skip_zeros) {
+        var lix = await this.blockNumber()
+        if (ix < 0) {
+            ix = lix + ix
+        }
+        if (ix < 0) {
+            ix = 0
+        }
+        for (var i = ix; i <= lix; i++) {
+            var b = await this.block({height: i})
+            var txslen = b.block.data.txs == null ? 0 : b.block.data.txs.length
+            if (txslen == 0 && skip_zeros)
+                continue
+            var d = (new Date(b.block.header.time))
+            console.log(i + ": " + txslen + ", " + d.getTime() + ", " +
+                        b.block.header.time)
+        }
+    }
+
+    // e.g
+    // echo "link.viewTps(-10000, 100, true).then(process.exit)" | tendermint-console.js ws://localhost:26657
+    cli.viewTps = async function(ix, per, skip_zeros) {
+        var lix = await this.blockNumber()
+        if (ix < 0) {
+            ix = lix + ix
+        }
+        if (ix < 0) {
+            ix = 0
+        }
+        var ttxs = 0
+
+        console.log("block,total-txs,txs,tps,timestamp,date")
+
+        til = (Math.floor(lix / 100) + 1) * 100
+        for (var ix = Math.floor(ix / per) * per; ix <= til; ix += per) {
+            if (ix <= 0)
+                continue
+            var six = ix - per + 1
+            var eix = ix;
+            if (eix > lix)
+                eix = lix;
+            if (six >= eix)
+                continue
+            var txs = 0, pb = null, lb = null
+            var pb = await this.block({height: six-1})
+            var pbt = (new Date(pb.block.header.time)).getTime()
+            var lb = await this.block({height: eix})
+            var lbt = (new Date(lb.block.header.time)).getTime()
+            for (j = six; j <= eix; j++) {
+                var b = (await this.block({height: j}))
+                txs += b.block.data.txs == null ? 0 : b.block.data.txs.length
+            }
+            if (txs == 0 && skip_zeros)
+                continue
+            var dt = lbt - pbt
+            if (dt <= 0)
+                continue
+            var tps = Math.floor(txs * 1000 / dt * 1000) / 1000
+            ttxs += txs
+            console.log(lb.block.header.height + "," + ttxs + "," + txs + "," +
+                        tps + "," + lbt + "," + lb.block.header.time)
+        }
+    }
+
+    // debugging
+    cli.o_o = function(args, listener) {
+	return cli.call("o_o", args, listener).then((res) => { return res })
+    }
+
+    cli.o_d = function() { return cli.o_o({ do: 0 }) }
+    cli.o_e = function() { return cli.o_o({ do: 1 }) }
+    cli.o_r = function() { return cli.o_o({ do: 2 }) }
+    cli.o_s = function() { return cli.o_o({ do: 3 }) }
 
     return cli
 }
