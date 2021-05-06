@@ -90,14 +90,28 @@ function connect(url) {
 
     // need to add account access
 
+    // collect node id => name map from status.node_info and peers.node_info
+    cli.getNodeNames = async function() {
+        var ns = new Array()
+        var ss = await this.status()
+        ns[ss.node_info.id.toUpperCase()] = ss.node_info.moniker
+
+        var ps = await this.netInfo()
+        for (var i in ps.peers) {
+            var p = ps.peers[i].node_info
+            ns[p.id.toUpperCase()] = p.moniker
+        }
+        return ns
+    }
+
     //
     cli.viewTxs = async function(ix, skip_zeros) {
         var lix = await this.blockNumber()
         if (ix < 0) {
             ix = lix + ix
         }
-        if (ix < 0) {
-            ix = 0
+        if (ix <= 0) {
+            ix = 1
         }
         for (var i = ix; i <= lix; i++) {
             var b = await this.block({height: i})
@@ -105,8 +119,9 @@ function connect(url) {
             if (txslen == 0 && skip_zeros)
                 continue
             var d = (new Date(b.block.header.time))
-            console.log(i + ": " + txslen + ", " + d.getTime() + ", " +
-                        b.block.header.time)
+            var miner = b.block.header.proposer_address
+            console.log(i + ", " + txslen + ", " + miner + ", " +
+                        d.getTime() + ", " + b.block.header.time)
         }
     }
 
@@ -117,8 +132,8 @@ function connect(url) {
         if (ix < 0) {
             ix = lix + ix
         }
-        if (ix < 0) {
-            ix = 0
+        if (ix <= 0) {
+            ix = 1
         }
         var ttxs = 0
 
@@ -135,7 +150,7 @@ function connect(url) {
             if (six >= eix)
                 continue
             var txs = 0, pb = null, lb = null
-            var pb = await this.block({height: six-1})
+            var pb = await this.block({height: six-1 <= 0 ? 1 : six-1})
             var pbt = (new Date(pb.block.header.time)).getTime()
             var lb = await this.block({height: eix})
             var lbt = (new Date(lb.block.header.time)).getTime()
