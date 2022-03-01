@@ -44,5 +44,15 @@ By hex or base64 transaction hash
 By base64 transaction hash
 
     > await link.tx({hash: hash, prove: true})
+    
+#### Get TPS
+
+To get transactions per seconds.
+
+    # args
+    #   ix:         starting block if > 0, or number of blocks to go back if < 0
+    #   count:      number of blocks to aggregate
+    #   skip_zeros: do not print if an aggregate doesn't have any transactions
+    > link.viewTps(-1000000, 100, true).then(log)
 
 #### More To Be Added
