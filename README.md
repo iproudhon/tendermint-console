@@ -55,4 +55,6 @@ To get transactions per seconds.
     #   skip_zeros: do not print if an aggregate doesn't have any transactions
     > link.viewTps(-1000000, 100, true).then(log)
 
+Import this into spreadsheets to get a nice looking graph.
+
 #### More To Be Added
